@@ -147,10 +147,6 @@ import org.apache.pig.impl.util.UDFContext;
  *           name does not have a .csv extension. 
  * </ul>
  * 
- * @author "Andreas Paepcke" <paepcke@cs.stanford.edu". 
- * 					The load portion is based on Dmitriy V. Ryaboy's CSVLoader,
- * 					which in turn is loosely based on a version by James Kebinger.
- *
  */
 
 public class CSVExcelStorage extends PigStorage implements StoreFuncInterface, LoadPushDown {
@@ -354,7 +350,11 @@ public class CSVExcelStorage extends PigStorage implements StoreFuncInterface, L
     		fieldCounter++;
     		if (field == null) {
     			logger.warn("Field " + fieldCounter + " within tuple '" + tupleToWrite + "' is null.");
-    			return;
+    			//Add string "null" to tuple when field is null. Field could be null
+    			//for reasons such as, when user tries to access non-existent field 
+    			//or if UDF returns null.
+    			mProtoTuple.add("");
+    			continue;
     		}
     		
     		fieldStr = field.toString();
