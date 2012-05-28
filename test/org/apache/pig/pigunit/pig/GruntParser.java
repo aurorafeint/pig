@@ -20,6 +20,8 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.log4j.Logger;
+
 
 /**
  * Slightly modified GruntParser that accepts a list of aliases to override.
@@ -39,6 +41,8 @@ public class GruntParser extends org.apache.pig.tools.grunt.GruntParser {
   /** A mapping <alias,query> to apply to the pig script. */
   private final Map<String, String> aliasOverride;
 
+  private static final Logger LOG = Logger.getLogger(GruntParser.class);
+  
   /**
    * Initializes the Pig parser with its list of aliases to override.
    *
@@ -75,7 +79,7 @@ public class GruntParser extends org.apache.pig.tools.grunt.GruntParser {
       saveLastStoreAlias(query, metaData);
 
       if (query.toLowerCase().startsWith(alias.getKey().toLowerCase() + " ")) {
-        System.out.println(
+    	  LOG.info(
             String.format("%s\n--> %s", query, alias.getValue() == "" ? "none" : alias.getValue()));
         query = alias.getValue();
       }
