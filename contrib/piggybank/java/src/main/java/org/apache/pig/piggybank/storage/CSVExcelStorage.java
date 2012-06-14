@@ -35,6 +35,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.log4j.Logger;
 import org.apache.pig.LoadPushDown;
 import org.apache.pig.PigException;
+import org.apache.pig.ResourceSchema;
 import org.apache.pig.StoreFuncInterface;
 import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
@@ -295,6 +296,39 @@ public class CSVExcelStorage extends PigStorage implements StoreFuncInterface, L
     	initializeInstance(delimiter, multilineTreatment, eolTreatment);
     }
 
+    /**
+     * Constructs a CSVExcel load/store that uses specified string 
+     * as a field delimiter, provides choice whether to manage multiline 
+     * fields, and specifies chars used for end of line. Allows you to
+     * specify options the same way that are used for PigStorage."
+     * <p> 
+     * The eofTreatment parameter is only relevant for STORE():
+     * <ul>
+     * <li>      For "UNIX", newlines will be stored as LF chars
+     * <li>      For "WINDOWS", newlines will be stored as CRLF
+     * </ul>
+     * <b>Pig example:</b><br>
+     * {@code STORE a INTO '/tmp/foo.csv'}<br>
+     * {@code USING org.apache.pig.piggybank.storage.CSVExcelStorage(",", "NO_MULTILINE", "WINDOWS");} 
+     * 
+     * @param delimiter
+     *            the single byte character that is used to separate fields.
+     * @param String 
+     * 			  "YES_MULTILINE" or "NO_MULTILINE"
+     *            ("NO_MULTILINE is the default. null will use default.)
+     * @param eolTreatment
+     * 			  "UNIX", "WINDOWS", or "NOCHANGE" 
+     *            ("NOCHANGE" is the default. null will use default.)
+     * @param options
+     * 			  Same options that you can provide to PigStorage.
+     */
+    public CSVExcelStorage(String delimiter, String multilineTreatment, String eolTreatment, 
+    		String options) {
+    	super(delimiter, options);
+    	String multiline = (multilineTreatment == null) ? MULTILINE_DEFAULT_STR : multilineTreatment;
+    	String eolT = (eolTreatment == null) ? LINEBREAKS_DEFAULT_STR : eolTreatment;
+    	initializeInstance(delimiter, multiline, eolT);
+    }
     
     private void initializeInstance(String delimiter, String multilineStr, String theEofTreatment) {
         FIELD_DEL = StorageUtil.parseFieldDel(delimiter);

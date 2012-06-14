@@ -33,6 +33,7 @@ import org.apache.pig.PigServer;
 import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.Tuple;
+import org.apache.pig.piggybank.storage.CSVExcelStorage;
 import org.apache.pig.test.Util;
 import org.junit.Assert;
 import org.junit.Test;
@@ -213,7 +214,78 @@ public class TestCSVExcelStorage {
         compareExpectedActual(testStrCommaNoMultilineResultTuples, "d");
 
     }
+
+    @Test
+    public void testConstructorWithOptions() throws IOException {
+    	CSVExcelStorage csvExcelStorage = new CSVExcelStorage(",", null, null, "-schema");
+    	csvExcelStorage.getOutputFormat(); // just any call to confirm it doesn't break;
+
+    	// A simple test but using the "empty" constructor with the schema option
+        String inputFileName = "TestCSVExcelStorage-simple.txt";
+        Util.createLocalInputFile(inputFileName, new String[] {"foo,bar,baz", "fee,foe,fum"});
+        String script = "a = load '" + inputFileName + 
+        		"' using org.apache.pig.piggybank.storage.CSVExcelStorage(',','NO_MULTILINE','NOCHANGE','-noschema') " +
+        		"   as (a:chararray, b:chararray, c:chararray); ";
+        Util.registerMultiLineQuery(pigServer, script);
+        Iterator<Tuple> it = pigServer.openIterator("a");
+        assertEquals(Util.createTuple(new String[] {"foo", "bar", "baz"}), it.next());
+        
+    	// Read the test file:
+        String script2 = 
+        	"a = LOAD '" + testFileCommaName + "' " +   	
+        	"USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'NOCHANGE', '-noschema');";
+        Util.registerMultiLineQuery(pigServer, script2);
+        compareExpectedActual(testStrCommaYesMultilineResultTuples, "a");
+        
+        // Store the test file back down into another file using YES_MULTILINE:
+        String testOutFileName = createOutputFileName();
+        script2 = "STORE a INTO '" + testOutFileName + "' USING " +
+					"org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'NOCHANGE', '-schema');";
+        pigServer.registerQuery(script2);
+
+    }
     
+    @Test
+    public void testMultilineWithSchemaEnabled() throws IOException {
+    	// Read the test file:
+        String script = 
+        	"a = LOAD '" + testFileCommaName + "' " +   	
+        	"USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'NOCHANGE', '-noschema');";
+        Util.registerMultiLineQuery(pigServer, script);
+        compareExpectedActual(testStrCommaYesMultilineResultTuples, "a");
+        
+        // Store the test file back down into another file using YES_MULTILINE:
+        String testOutFileName = createOutputFileName();
+        script = "STORE a INTO '" + testOutFileName + "' USING " +
+					"org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'NOCHANGE', '-schema');";
+        pigServer.registerQuery(script);
+        
+        // Read it back out using YES_MULTILINE, and see whether it's still correct:
+        script = "b = LOAD '" + testOutFileName + "' " +   	
+        	"USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'NOCHANGE', '-noschema');";
+        Util.registerMultiLineQuery(pigServer, script);
+        compareExpectedActual(testStrCommaYesMultilineResultTuples, "b");
+        
+        // Now read it back again, but multilines turned off:
+        script = "c = LOAD '" + testOutFileName + "' " +   	
+        	"USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'NO_MULTILINE', 'NOCHANGE', '-noschema');";
+        Util.registerMultiLineQuery(pigServer, script);
+        compareExpectedActual(testStrCommaNoMultilineResultTuples, "c");
+
+        // Store this re-read test file back down again, into another file using NO_MULTILINE:
+        testOutFileName = createOutputFileName();
+        script = "STORE c INTO '" + testOutFileName + "' USING " +
+					"org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'NO_MULTILINE', 'NOCHANGE', '-schema');";
+        pigServer.registerQuery(script);
+        
+        // Read it back in, again with NO_MULTILINE and see whether it's still correct:
+        script = "d = LOAD '" + testOutFileName + "' " +   	
+        	"USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'NO_MULTILINE', 'NOCHANGE', '-noschema');";
+        Util.registerMultiLineQuery(pigServer, script);
+        compareExpectedActual(testStrCommaNoMultilineResultTuples, "d");
+
+    }
+
     @Test
     public void testTabDelimiter() throws IOException {
     	// Read the test file:
